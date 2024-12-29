@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ktor-sample-deployment
+  labels:
+    app: ktor-sample-deployment
+spec:
+  selector:
+    matchLabels:
+      app: ktor-sample-deployment
+  template:
+    metadata:
+      name: ktor-sample-deployment
+      labels:
+        app: ktor-sample-deployment
+    spec:
+      containers:
+        - name: ktor-sample-app
+          image: ktor-sample-image:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http-web-svc
+              protocol: TCP
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ktor-sample-service
+spec:
+  selector:
+    app: ktor-sample-deployment
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http-web-svc
+      nodePort: 30000
+  type: NodePort
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ktor-sample-autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ktor-sample-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
